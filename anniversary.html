@@ -2,13 +2,12 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <!-- スマホ対応のためのmetaタグ -->
+  <!-- スマホ対応 -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>おしゃれな記念日アプリ</title>
-  <!-- Google Fonts の読み込み（Roboto） -->
+  <!-- Google Fonts (Roboto) -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    /* 全体のスタイル */
     body {
       margin: 0;
       padding: 0;
@@ -16,7 +15,6 @@
       background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
       color: #333;
     }
-    /* コンテナ：スマホでも見やすい幅と余白 */
     .container {
       max-width: 600px;
       margin: 20px auto;
@@ -30,7 +28,6 @@
       color: #555;
       margin-bottom: 20px;
     }
-    /* 入力グループのスタイル */
     .input-group {
       margin-bottom: 15px;
     }
@@ -59,7 +56,6 @@
     button:hover {
       background: #3949ab;
     }
-    /* 記念日リストのスタイル */
     #anniversary-list {
       margin-top: 20px;
     }
@@ -95,6 +91,7 @@
 <body>
   <div class="container">
     <h1>記念日アプリ</h1>
+    <!-- 記念日追加用フォーム -->
     <div class="input-group">
       <label for="name">記念日名 (例: 誕生日, 結婚記念日)</label>
       <input type="text" id="name" placeholder="記念日名">
@@ -104,7 +101,16 @@
       <input type="date" id="date">
     </div>
     <div class="input-group">
-      <label for="unit">カウントダウン単位</label>
+      <label for="recurring">
+        <input type="checkbox" id="recurring">
+        毎年繰り返し
+      </label>
+    </div>
+    <button id="add-anniversary">追加する</button>
+
+    <!-- カウントダウン表示単位のグローバル設定 -->
+    <div class="input-group">
+      <label for="unit">カウントダウン表示形式</label>
       <select id="unit">
         <option value="seconds">秒</option>
         <option value="minutes">分</option>
@@ -113,12 +119,14 @@
         <option value="months">月</option>
       </select>
     </div>
-    <button id="add-anniversary">追加する</button>
+
     <div id="anniversary-list"></div>
   </div>
 
   <script>
     let anniversaries = [];
+    // グローバルなカウントダウン単位（初期値はセレクトボックスの値）
+    let displayUnit = document.getElementById('unit').value;
 
     // LocalStorageへの保存
     function saveAnniversaries() {
@@ -131,12 +139,12 @@
         anniversaries = JSON.parse(stored);
       }
     }
-    // 入力された日付から次の記念日を計算
-    function getNextOccurrence(dateStr) {
+    // 入力された日付から次の記念日を計算（繰り返しなら次の年も考慮）
+    function getNextOccurrence(dateStr, recurring) {
       const [year, month, day] = dateStr.split('-').map(Number);
       const today = new Date();
       let target = new Date(today.getFullYear(), month - 1, day);
-      if (target < today) {
+      if (recurring && target < today) {
         target = new Date(today.getFullYear() + 1, month - 1, day);
       }
       return target;
@@ -175,13 +183,15 @@
       const list = document.getElementById('anniversary-list');
       list.innerHTML = '';
       anniversaries.forEach((item, index) => {
-        const nextOccurrence = getNextOccurrence(item.date);
-        const countdownValue = calculateCountdown(nextOccurrence, item.unit);
+        const nextOccurrence = getNextOccurrence(item.date, item.recurring);
+        const countdownValue = calculateCountdown(nextOccurrence, displayUnit);
         const container = document.createElement('div');
         container.className = 'anniversary-item';
         container.innerHTML = `
-          <div><strong>${item.name ? item.name : '記念日'}</strong> - ${item.date}</div>
-          <div>残り: <span id="countdown-${index}">${countdownValue}</span> ${item.unit}</div>
+          <div>
+            <strong>${item.name ? item.name : '記念日'}</strong> - ${item.date} ${item.recurring ? '（毎年）' : ''}
+          </div>
+          <div>残り: <span id="countdown-${index}">${countdownValue}</span> ${displayUnit}</div>
           <button class="delete-button" onclick="deleteAnniversary(${index})">削除</button>
         `;
         list.appendChild(container);
@@ -195,26 +205,35 @@
     }
     window.deleteAnniversary = deleteAnniversary;
 
-    // 記念日を追加するボタンの処理
+    // 「追加する」ボタンの処理
     document.getElementById('add-anniversary').addEventListener('click', function() {
       const name = document.getElementById('name').value;
       const date = document.getElementById('date').value;
-      const unit = document.getElementById('unit').value;
+      const recurring = document.getElementById('recurring').checked;
       if (!date) {
         alert('日付を入力してください');
         return;
       }
-      anniversaries.push({ name, date, unit });
+      anniversaries.push({ name, date, recurring });
       saveAnniversaries();
       renderAnniversaries();
+      // 入力欄をリセット
       document.getElementById('name').value = '';
       document.getElementById('date').value = '';
+      document.getElementById('recurring').checked = false;
     });
+
+    // カウントダウン表示単位の変更時にグローバル変数を更新し再描画
+    document.getElementById('unit').addEventListener('change', function() {
+      displayUnit = this.value;
+      renderAnniversaries();
+    });
+
     // 1秒ごとにカウントダウンを更新
     setInterval(() => {
       anniversaries.forEach((item, index) => {
-        const nextOccurrence = getNextOccurrence(item.date);
-        const countdownValue = calculateCountdown(nextOccurrence, item.unit);
+        const nextOccurrence = getNextOccurrence(item.date, item.recurring);
+        const countdownValue = calculateCountdown(nextOccurrence, displayUnit);
         const countdownElem = document.getElementById(`countdown-${index}`);
         if (countdownElem) {
           countdownElem.innerText = countdownValue;

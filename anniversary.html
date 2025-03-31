@@ -65,23 +65,27 @@
       border: 1px solid #e0e0e0;
       border-radius: 5px;
       margin-bottom: 15px;
-      position: relative;
+    }
+    /* ヘッダー部分：タイトルと削除ボタンを左右に配置 */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
     }
     .anniversary-item strong {
       font-size: 1.1rem;
       color: #333;
     }
+    /* 削除ボタンのサイズを小さく調整 */
     .delete-button {
-      position: absolute;
-      top: 10px;
-      right: 10px;
       background: #e57373;
       color: #fff;
       border: none;
-      padding: 5px 10px;
+      padding: 3px 6px;
       border-radius: 3px;
       cursor: pointer;
-      font-size: 0.9rem;
+      font-size: 0.75rem;
     }
     .delete-button:hover {
       background: #d32f2f;
@@ -125,7 +129,6 @@
 
   <script>
     let anniversaries = [];
-    // グローバルなカウントダウン単位（初期値はセレクトボックスの値）
     let displayUnit = document.getElementById('unit').value;
 
     // LocalStorageへの保存
@@ -139,7 +142,7 @@
         anniversaries = JSON.parse(stored);
       }
     }
-    // 入力された日付から次の記念日を計算（繰り返しなら次の年も考慮）
+    // 入力された日付から次の記念日を計算（繰り返しなら翌年も考慮）
     function getNextOccurrence(dateStr, recurring) {
       const [year, month, day] = dateStr.split('-').map(Number);
       const today = new Date();
@@ -178,7 +181,7 @@
           return diff;
       }
     }
-    // 記念日リストの表示更新（ここで記念日名を必ず表示）
+    // 記念日リストの表示更新
     function renderAnniversaries() {
       const list = document.getElementById('anniversary-list');
       list.innerHTML = '';
@@ -188,11 +191,13 @@
         const container = document.createElement('div');
         container.className = 'anniversary-item';
         container.innerHTML = `
-          <div>
-            <strong>${item.name ? item.name : '記念日'}</strong> - ${item.date} ${item.recurring ? '（毎年）' : ''}
+          <div class="header">
+            <div>
+              <strong>${item.name ? item.name : '記念日'}</strong> - ${item.date} ${item.recurring ? '（毎年）' : ''}
+            </div>
+            <button class="delete-button" onclick="deleteAnniversary(${index})">削除</button>
           </div>
           <div>残り: <span id="countdown-${index}">${countdownValue}</span> ${displayUnit}</div>
-          <button class="delete-button" onclick="deleteAnniversary(${index})">削除</button>
         `;
         list.appendChild(container);
       });
@@ -217,7 +222,6 @@
       anniversaries.push({ name, date, recurring });
       saveAnniversaries();
       renderAnniversaries();
-      // 入力欄をリセット
       document.getElementById('name').value = '';
       document.getElementById('date').value = '';
       document.getElementById('recurring').checked = false;
@@ -241,7 +245,6 @@
       });
     }, 1000);
 
-    // 初期化：LocalStorageから読み込み＆表示
     loadAnniversaries();
     renderAnniversaries();
   </script>

@@ -2,60 +2,109 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>複数記念日アプリ</title>
+  <!-- スマホ対応のためのmetaタグ -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>おしゃれな記念日アプリ</title>
+  <!-- Google Fonts の読み込み（Roboto） -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
+    /* 全体のスタイル */
     body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
+      margin: 0;
+      padding: 0;
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+      color: #333;
     }
+    /* コンテナ：スマホでも見やすい幅と余白 */
     .container {
-      max-width: 800px;
-      margin: auto;
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
+    h1 {
+      text-align: center;
+      color: #555;
+      margin-bottom: 20px;
+    }
+    /* 入力グループのスタイル */
     .input-group {
-      margin-bottom: 10px;
+      margin-bottom: 15px;
     }
     label {
       display: block;
       margin-bottom: 5px;
+      font-weight: bold;
+      color: #666;
     }
     input, select, button {
-      padding: 8px;
+      width: 100%;
+      padding: 10px;
       font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      box-sizing: border-box;
+      margin-bottom: 10px;
     }
+    button {
+      background: #5c6bc0;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background: #3949ab;
+    }
+    /* 記念日リストのスタイル */
     #anniversary-list {
       margin-top: 20px;
     }
     .anniversary-item {
-      border: 1px solid #ccc;
-      padding: 10px;
-      margin-bottom: 10px;
-      border-radius: 4px;
+      padding: 15px;
+      background: #fafafa;
+      border: 1px solid #e0e0e0;
+      border-radius: 5px;
+      margin-bottom: 15px;
+      position: relative;
+    }
+    .anniversary-item strong {
+      font-size: 1.1rem;
+      color: #333;
     }
     .delete-button {
-      background-color: #f44336;
-      color: white;
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #e57373;
+      color: #fff;
       border: none;
       padding: 5px 10px;
-      cursor: pointer;
       border-radius: 3px;
-      margin-top: 5px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .delete-button:hover {
+      background: #d32f2f;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>複数記念日アプリ</h1>
+    <h1>記念日アプリ</h1>
     <div class="input-group">
-      <label for="name">記念日名（任意）:</label>
-      <input type="text" id="name" placeholder="例：誕生日、結婚記念日など">
+      <label for="name">記念日名 (例: 誕生日, 結婚記念日)</label>
+      <input type="text" id="name" placeholder="記念日名">
     </div>
     <div class="input-group">
-      <label for="date">記念日を入力してください（YYYY-MM-DD形式）:</label>
+      <label for="date">記念日 (YYYY-MM-DD)</label>
       <input type="date" id="date">
     </div>
     <div class="input-group">
-      <label for="unit">カウントダウンの単位:</label>
+      <label for="unit">カウントダウン単位</label>
       <select id="unit">
         <option value="seconds">秒</option>
         <option value="minutes">分</option>
@@ -64,25 +113,35 @@
         <option value="months">月</option>
       </select>
     </div>
-    <button id="add-anniversary">記念日を追加</button>
-
+    <button id="add-anniversary">追加する</button>
     <div id="anniversary-list"></div>
   </div>
 
   <script>
-    // 指定された日付の次回の発生日を取得
+    let anniversaries = [];
+
+    // LocalStorageへの保存
+    function saveAnniversaries() {
+      localStorage.setItem('anniversaries', JSON.stringify(anniversaries));
+    }
+    // LocalStorageからの読み込み
+    function loadAnniversaries() {
+      const stored = localStorage.getItem('anniversaries');
+      if (stored) {
+        anniversaries = JSON.parse(stored);
+      }
+    }
+    // 入力された日付から次の記念日を計算
     function getNextOccurrence(dateStr) {
       const [year, month, day] = dateStr.split('-').map(Number);
       const today = new Date();
       let target = new Date(today.getFullYear(), month - 1, day);
-      // 今年の記念日が既に過ぎていれば、翌年のものにする
       if (target < today) {
         target = new Date(today.getFullYear() + 1, month - 1, day);
       }
       return target;
     }
-
-    // 月単位の差を計算する関数
+    // 月単位の差を計算
     function monthDiff(d1, d2) {
       let months = (d2.getFullYear() - d1.getFullYear()) * 12;
       months += d2.getMonth() - d1.getMonth();
@@ -91,8 +150,7 @@
       }
       return months;
     }
-
-    // 指定した単位でカウントダウン値を計算
+    // 指定単位でカウントダウンを計算
     function calculateCountdown(target, unit) {
       const now = new Date();
       let diff = target - now;
@@ -112,23 +170,7 @@
           return diff;
       }
     }
-
-    let anniversaries = [];
-
-    // LocalStorage に保存
-    function saveAnniversaries() {
-      localStorage.setItem('anniversaries', JSON.stringify(anniversaries));
-    }
-
-    // LocalStorage から読み込み
-    function loadAnniversaries() {
-      const stored = localStorage.getItem('anniversaries');
-      if (stored) {
-        anniversaries = JSON.parse(stored);
-      }
-    }
-
-    // 表示を更新する関数
+    // 記念日リストの表示更新
     function renderAnniversaries() {
       const list = document.getElementById('anniversary-list');
       list.innerHTML = '';
@@ -139,22 +181,21 @@
         container.className = 'anniversary-item';
         container.innerHTML = `
           <div><strong>${item.name ? item.name : '記念日'}</strong> - ${item.date}</div>
-          <div>カウントダウン（${item.unit}）：<span id="countdown-${index}">${countdownValue}</span></div>
+          <div>残り: <span id="countdown-${index}">${countdownValue}</span> ${item.unit}</div>
           <button class="delete-button" onclick="deleteAnniversary(${index})">削除</button>
         `;
         list.appendChild(container);
       });
     }
-
-    // 記念日を削除する関数
+    // 記念日を削除する処理
     function deleteAnniversary(index) {
       anniversaries.splice(index, 1);
       saveAnniversaries();
       renderAnniversaries();
     }
-    window.deleteAnniversary = deleteAnniversary;  // onclick から呼び出すために公開
+    window.deleteAnniversary = deleteAnniversary;
 
-    // 「記念日を追加」ボタンの処理
+    // 記念日を追加するボタンの処理
     document.getElementById('add-anniversary').addEventListener('click', function() {
       const name = document.getElementById('name').value;
       const date = document.getElementById('date').value;
@@ -166,12 +207,10 @@
       anniversaries.push({ name, date, unit });
       saveAnniversaries();
       renderAnniversaries();
-      // 入力欄をクリア
       document.getElementById('name').value = '';
       document.getElementById('date').value = '';
     });
-
-    // 1秒ごとに各記念日のカウントダウンを更新
+    // 1秒ごとにカウントダウンを更新
     setInterval(() => {
       anniversaries.forEach((item, index) => {
         const nextOccurrence = getNextOccurrence(item.date);
@@ -183,7 +222,7 @@
       });
     }, 1000);
 
-    // 初期表示
+    // 初期化：LocalStorageから読み込み＆表示
     loadAnniversaries();
     renderAnniversaries();
   </script>
